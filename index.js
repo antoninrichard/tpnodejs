@@ -5,10 +5,10 @@ const mysql = require('mysql');
 
 //INITALISATION DE LA CONNEXION A LA BASE DE DONNEES
 const pool = mysql.createPool({
-        host    :   '**',
-        user    :   '**',
-        password : '**',
-        database  : '**'
+        host    :   '*****',
+        user    :   '*****',
+        password : '*****',
+        database  : '****'
     });
 
 //CREATION DES OBJETS
@@ -136,9 +136,20 @@ app.put(`/api/${versionApi}/travel/:id`, (req,res)=>{
     pool.getConnection(function(err,connection){
         if (err) throw err;
         connection.query(`UPDATE voyage SET nom = '${data.nom}', createur = '${data.createur}' WHERE id=${id}`, function(error,results,fields) {
-            connection.release();
             if (error) throw error;
+            //supression de tous les id
+            connection.query(`DELETE FROM \`assoc_voyage_ville\` WHERE id_voyage=${id}`, function (error, results, fields) {
+                if (error) throw error;
+            })
+            //ajout
+            data.destinations.forEach(function (destination) {
+                connection.query(`INSERT INTO assoc_voyage_ville(id_ville,id_voyage) VALUES ('${id}','${destination}')`, function (error, results, fields) {
+                    if (error) throw error;
+                })
+            });
            })
+        connection.release();
+        res.send(`Updated travel for id ${id}`)
         })
     });
 
@@ -149,13 +160,25 @@ app.delete(`/api/${versionApi}/travel/:id`, (req,res)=>{
         if(err) throw err;
         connection.query(`DELETE FROM \`voyage\` WHERE id=${id}`, function (error, results, fields) {
             if (error) throw error;
-        })
-        connection.query(`DELETE FROM \`assoc_voyage_ville\` WHERE id_voyage=${id}`, function (error, results, fields) {
-            if (error) throw error;
-            connection.release();
+            connection.query(`DELETE FROM \`assoc_voyage_ville\` WHERE id_voyage=${id}`, function (error, results, fields) {
+                if (error) throw error;
+                connection.release();
+            })
         })
         res.send('ok');
     })
+});
+
+//GET /api/v1/city
+app.get(`/api/${versionApi}/city`, (req,res) => {
+    pool.getConnection(function (err,connection){
+        if(err) throw err;
+        connection.query(`SELECT * FROM ville`, function (error, results,fields) {
+            if(error) throw error;
+            connection.release();
+            res.json(results);
+        })
+    });
 });
 
 
