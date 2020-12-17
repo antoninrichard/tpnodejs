@@ -5,10 +5,10 @@ const mysql = require('mysql');
 
 //INITALISATION DE LA CONNEXION A LA BASE DE DONNEES
 const pool = mysql.createPool({
-        host    :   '*****',
-        user    :   '*****',
-        password : '*****',
-        database  : '****'
+        host    :   '**',
+        user    :   '**',
+        password : '**',
+        database  : '**'
     });
 
 //CREATION DES OBJETS
@@ -45,23 +45,25 @@ app.get('/', (req,res) => {
 //CREATE POST /api/v1/travel
 app.post(`/api/${versionApi}/travel`,(req, res) => {
     const data = req.body;
-    var newId = 0;
+
     //insertion du voyage
     pool.getConnection(function (err,connection) {
         if (err) throw err;
         //récuperation de l'id nouvellement inserer
          connection.query(`INSERT INTO voyage(nom,createur) VALUES ('${data.nom}','${data.createur}')`, function (error, results,fields) {
-            if(error) throw error;
+             var newId = 0;
+             if(error) throw error;
             console.log(newId);
             newId = results.insertId;
             data.destinations.forEach(function (destination) {
-                 connection.query(`INSERT INTO assoc_voyage_ville(id_ville,id_voyage) VALUES ('${newId}','${destination}')`, function (error, results, fields) {
+                 connection.query(`INSERT INTO assoc_voyage_ville(id_ville,id_voyage) VALUES ('${destination}','${id}')`, function (error, results, fields) {
                      if (error) throw error;
                  })
             });
+            connection.release();
+            res.send(`Travel has been store in database for id:${newId}`);
         })
-        connection.release();
-        res.send(`Travel has been store in database for id:${newId}`);
+
     });
 
 });
@@ -120,10 +122,9 @@ app.get(`/api/${versionApi}/travel`, (req,res) => {
                         toAddVille.description = element.description;
                         toAdd.destinations.push(toAddVille);
                     })
+                    toReturn.push(toAdd);
                 })
-                toReturn.push(toAdd);
             })
-            connection.release();
             res.json(toReturn);
         })
     });
@@ -143,7 +144,7 @@ app.put(`/api/${versionApi}/travel/:id`, (req,res)=>{
             })
             //ajout
             data.destinations.forEach(function (destination) {
-                connection.query(`INSERT INTO assoc_voyage_ville(id_ville,id_voyage) VALUES ('${id}','${destination}')`, function (error, results, fields) {
+                connection.query(`INSERT INTO assoc_voyage_ville(id_ville,id_voyage) VALUES ('${destination}','${id}')`, function (error, results, fields) {
                     if (error) throw error;
                 })
             });
